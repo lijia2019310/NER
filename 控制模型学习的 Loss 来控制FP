@@ -1,0 +1,12 @@
+#控制模型学习时的 Loss 来控制 P/R
+# logits_bio 是预测结果，形状为 B*S*V，softmax 之后就是每个字在BIO词表上的分布概率，不过不用写softmax，因为下面的函数会帮你做
+# self.outputs_seq_bio 是期望输出，形状为 B*S
+# 这是原本计算出来的 loss
+loss_bio = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits_bio, labels=self.outputs_seq_bio) # B * S
+# 这是根据期望的输出，获得 mask 向量，向量里出现1的位置代表对应的字是一个实体词，而 O_tag_index 就是 O 在 BIO 词表中的位置
+masks_of_entity = tf.cast(tf.not_equal(self.outputs_seq_bio, O_tag_index), tf.float32) # B * S
+# 这是基于 mask 计算 weights
+weights_of_loss = masks_of_entity + 0.5 # B  *S
+# 这是加权后的 loss
+loss_bio = loss_bio * weights_of_loss # B * S
+#链接：https://zhuanlan.zhihu.com/p/166496466
